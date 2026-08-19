@@ -39,7 +39,7 @@ export default function Hero() {
 
   return (
     <div className="relative min-h-[300vh]">
-      <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden bg-background px-6 text-center">
+      <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
         <h1 className="flex flex-wrap justify-center text-4xl font-semibold tracking-tight sm:text-5xl">
           {NAME.split("").map((char, i) => {
             const angle = i * 47;
@@ -62,7 +62,7 @@ export default function Hero() {
           })}
         </h1>
         <div
-          className={`flex flex-col items-center transition-opacity duration-700 ${
+          className={`relative flex flex-col items-center transition-opacity duration-700 ${
             revealed ? "opacity-100" : "pointer-events-none opacity-0"
           }`}
         >
