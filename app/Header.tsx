@@ -11,7 +11,7 @@ export default function Header() {
     <header className="flex flex-col items-start gap-2 px-6 py-6 text-sm font-medium">
       <nav className="flex gap-6">
         <Link href="/works" className="hover:opacity-70">
-          Works
+          WORKS
         </Link>
         <Link href="/contact" className="hover:opacity-70">
           Contact
