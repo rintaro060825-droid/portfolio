@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import sparks from "@/public/works/20260803-IMG_1363.jpg";
+import sparks from "@/public/works/photos/20260803-IMG_1363.jpg";
 
 const NAME = "Rintaro Toda";
 

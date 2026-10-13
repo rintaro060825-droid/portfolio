@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import Sheet from "@/components/Sheet";
-import crowd from "@/public/works/20260803-IMG_1215.jpg";
+import crowd from "@/public/works/photos/20260803-IMG_1215.jpg";
 
 const CRAFTS = [
   { ja: "写真", en: "Photo" },
