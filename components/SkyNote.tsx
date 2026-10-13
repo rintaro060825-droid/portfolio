@@ -1,6 +1,6 @@
 import { type Weather, WEATHERS, WEATHER_LABEL } from "@/lib/scene";
 
-const WEATHER_EN: Record<Weather, string> = {
+export const WEATHER_EN: Record<Weather, string> = {
   rain: "Rain",
   cloudy: "Clouds",
   clear: "Clear skies",

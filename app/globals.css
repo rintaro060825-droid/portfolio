@@ -8,6 +8,8 @@
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
   /* One shadow for every piece of paper, so none appears or vanishes mid-transition. */
   --paper-shadow: 0 1.5rem 4.5rem rgb(0 0 0 / 0.3);
+  /* First load: when the darkness lifts, in time from first paint (see .skyload). */
+  --tx: 2200ms;
 }
 
 @theme inline {
@@ -54,6 +56,13 @@ body {
 }
 .nav-mark {
   view-transition-name: nav-mark;
+}
+/* The development sky line (BackgroundVideo.tsx) stays put above the moving paper. */
+.sky-line {
+  view-transition-name: sky-line;
+}
+::view-transition-group(sky-line) {
+  z-index: 2;
 }
 .sky-note > span {
   display: none;
@@ -438,6 +447,182 @@ body {
 }
 
 /*
+ * First load: the sky report (SkyLoader.tsx). A dark screen with the site's
+ * caption on a hairline horizon and a little first light above it. When the
+ * weather over Tsujido is known the sentence finishes and the darkness lifts,
+ * along the horizon first, off that very sky.
+ *
+ * One clock: everything here is already running at first paint and only waits
+ * for --tx, the moment the darkness lifts. The script shortens that wait and
+ * never starts anything, so if it never runs the page still arrives.
+ */
+.skyload {
+  --horizon: 68%;
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  /* the caption's own size on a phone, a little more on a wide screen */
+  font-size: clamp(0.9375rem, 0.86rem + 0.25vw, 1.0625rem);
+  line-height: 1.375;
+  white-space: nowrap;
+  /* in the way of clicks until the darkness lifts, gone once it has */
+  animation: skyload-gone 0.9s var(--tx) forwards;
+}
+.skyload::before,
+.skyload::after,
+.skyload-horizon::before,
+.skyload-horizon::after {
+  content: "";
+  position: absolute;
+  inset-inline: 0;
+}
+/* The darkness. */
+.skyload::before {
+  inset-block: 0;
+  background: #000;
+  animation: fade-away 0.65s cubic-bezier(0.4, 0, 0.2, 1) var(--tx) forwards;
+}
+.skyload > * {
+  position: absolute;
+  z-index: 1;
+  animation: fade-away 0.45s ease-in calc(var(--tx) + 300ms) forwards;
+}
+.skyload-horizon {
+  inset-inline: 0;
+  top: var(--horizon);
+}
+/* First light: a low band resting on the horizon. */
+.skyload-horizon::before {
+  bottom: 0;
+  height: 30vh;
+  background: linear-gradient(
+    to top,
+    rgb(255 255 255 / 0.1),
+    rgb(255 255 255 / 0.045) 28%,
+    rgb(255 255 255 / 0.015) 60%,
+    transparent
+  );
+}
+/* The horizon: a hairline that thins out towards both edges. */
+.skyload-horizon::after {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgb(255 255 255 / 0.5) 22%,
+    rgb(255 255 255 / 0.5) 78%,
+    transparent
+  );
+}
+/* The caption stands either side of the line. The Japanese starts where it
+   would if "辻堂 いま はれ" were centred, so the word arrives without moving it. */
+.skyload-ja {
+  bottom: calc(100% - var(--horizon) + 0.7em);
+  left: calc(50% - 3.26em);
+}
+.skyload-en {
+  inset-inline: 0;
+  top: calc(var(--horizon) + 0.6em);
+  font-size: 0.9333em;
+  text-align: center;
+  opacity: 0.8;
+}
+.skyload [data-w] {
+  display: none;
+}
+.skyload[data-weather="rain"] [data-w="rain"],
+.skyload[data-weather="cloudy"] [data-w="cloudy"],
+.skyload[data-weather="clear"] [data-w="clear"] {
+  display: inline-block;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* A second veil, thinnest at the horizon, so the light comes up along the
+     line before it reaches the top and the ground. */
+  .skyload::after {
+    inset-block: 0;
+    background: linear-gradient(
+      rgb(0 0 0 / 0.72),
+      rgb(0 0 0 / 0.56) calc(var(--horizon) * 0.5),
+      rgb(0 0 0 / 0.22) calc(var(--horizon) * 0.85),
+      transparent var(--horizon),
+      rgb(0 0 0 / 0.2) calc(var(--horizon) + 12%),
+      rgb(0 0 0 / 0.42)
+    );
+    animation: fade-away 0.75s cubic-bezier(0.4, 0, 0.2, 1) calc(var(--tx) + 150ms) forwards;
+  }
+  .skyload-horizon::before {
+    animation: fade-away 2.4s ease-in backwards reverse;
+  }
+  .skyload-horizon::after {
+    animation: skyload-draw 2.6s var(--ease) backwards;
+  }
+  /* The words develop the way the name does. */
+  .skyload-ja {
+    animation:
+      letter-in 0.9s var(--ease) 0.3s backwards,
+      fade-away 0.45s ease-in calc(var(--tx) + 300ms) forwards;
+  }
+  .skyload [data-w] {
+    animation: letter-in 0.8s var(--ease) backwards;
+  }
+
+  /* The page behind waits for the same clock. Home: the name condenses as the
+     darkness lifts. Inner pages: the title develops on the sky, then the paper
+     rises from under it. Either way the page's own caption takes over once the
+     loader's has gone. */
+  :root:has(.skyload) .hero-letter {
+    animation-delay: calc(var(--tx) + 600ms + var(--i) * 55ms);
+  }
+  :root:has(.skyload) .hero-rise {
+    animation-delay: calc(var(--tx) + 1.55s);
+  }
+  :root:has(.skyload) .sky-note {
+    animation: fade-away 0.9s ease-in calc(var(--tx) + 800ms) backwards reverse;
+  }
+  :root:has(.skyload) .sheet-title {
+    animation: title-in 0.75s var(--ease) calc(var(--tx) + 450ms) backwards;
+  }
+  :root:has(.skyload) .sheet-paper {
+    animation: skyload-paper 0.75s var(--ease) calc(var(--tx) + 750ms) backwards;
+  }
+  /* the waiting paper must not lengthen the page */
+  :root:has(.skyload) main {
+    overflow-y: clip;
+  }
+}
+/* Without motion nothing draws or drifts, and the name is already standing
+   behind: the caption goes first, then the darkness. */
+@media (prefers-reduced-motion: reduce) {
+  .skyload > * {
+    animation-duration: 0.25s;
+    animation-delay: var(--tx);
+  }
+  .skyload::before {
+    animation-delay: calc(var(--tx) + 250ms);
+  }
+}
+@keyframes skyload-draw {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes skyload-paper {
+  from {
+    translate: 0 100vh;
+  }
+}
+@keyframes skyload-gone {
+  from {
+    pointer-events: none;
+  }
+  to {
+    pointer-events: none;
+    visibility: hidden;
+  }
+}
+
+/*
  * Page transitions (see Sheet.tsx, Header.tsx, WorksGallery.tsx). The sky never
  * moves; the sheet, the title, the nav mark and the photographs move over it.
  */
@@ -512,7 +697,7 @@ body {
  * state is in place.
  */
 /* The page's own held pieces are underneath the dialog: keep them out of it. */
-:root[data-vt] :is(.sky-note, .nav-mark) {
+:root[data-vt] :is(.sky-note, .nav-mark, .sky-line) {
   view-transition-name: none;
 }
 .lightbox-photo {

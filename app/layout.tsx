@@ -20,6 +20,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="en" className={`${mincho.variable} h-full antialiased`}>
       <body className="min-h-full flex flex-col">
+        {/* Without scripts the sky never arrives, so nothing waits for it. */}
+        <noscript>
+          <style>{":root{--tx:0ms}.skyload{display:none}"}</style>
+        </noscript>
         <SiteBackground />
         <div className="relative z-0 flex min-h-full flex-1 flex-col">
           <Header />

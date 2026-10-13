@@ -112,50 +112,57 @@ export default function BackgroundVideo({ weather, overlay = true }: Props) {
         {overlay && <div className="absolute inset-0 bg-black/25" />}
       </div>
 
-      {/* 開発中だけ出る空の切り替え。画面右端に縦書きで置き、ページの上には載せない */}
+      {/* 開発中だけ出る空の切り替え。画面の下端に敷く一本の線で、写真のデータ表示のように読む。
+          白い文字＝いま出ている空、下線＝手で固定している値（もう一度押すと外れる） */}
       {isDev && (
         <div
           role="group"
           lang="ja"
           aria-label="空の切り替え（開発用）"
-          className="fixed top-1/2 right-1 z-50 flex w-7 -translate-y-1/2 flex-col items-center gap-2.5 rounded-full bg-black/35 py-4 text-xs leading-none tracking-[0.14em] text-white/55 backdrop-blur-md"
+          className="sky-line fixed inset-x-0 bottom-0 z-50 box-content flex h-5 items-center justify-end gap-2 bg-black pr-5 pb-[env(safe-area-inset-bottom)] pl-4 text-xs leading-none whitespace-nowrap text-white/60 sm:gap-5 sm:pr-[2.125rem]"
         >
-          {/* 動画の状態：塗り＝再生中、点滅＝読込中、輪＝動画なし */}
-          <span
-            title={`${scene} · ${noVideo ? "動画なし" : ready ? "再生中" : "読込中"}`}
-            className={`size-1.5 rounded-full border border-white ${
-              noVideo ? "" : ready ? "bg-white" : "animate-pulse bg-white"
-            }`}
-          />
-          {WEATHERS.map((w) => (
-            <button
-              key={w}
-              aria-pressed={shownWeather === w}
-              onClick={() => setDevWeather(w)}
-              className={DEV_BUTTON}
+          <p className="hidden pr-1.5 sm:block" title={videoSrc(scene)}>
+            <span lang="en" className="text-white">
+              {scene}
+            </span>
+            <span lang="en">.mp4</span>
+            <span
+              className={`ml-3 ${noVideo ? "" : ready ? "text-white" : "animate-pulse"}`}
             >
-              {WEATHER_LABEL[w]}
-            </button>
-          ))}
-          <span className="h-px w-3 bg-white/30" />
-          {TIMES.map((t) => (
-            <button
-              key={t}
-              aria-pressed={(devTime ?? time) === t}
-              onClick={() => setDevTime(t)}
-              className={DEV_BUTTON}
-            >
-              {TIME_LABEL[t]}
-            </button>
-          ))}
-          <span className="h-px w-3 bg-white/30" />
+              {noVideo ? "動画なし" : ready ? "再生中" : "読込中"}
+            </span>
+          </p>
+          <div className="flex h-full">
+            {WEATHERS.map((w) => (
+              <button
+                key={w}
+                aria-pressed={devWeather === w}
+                onClick={() => setDevWeather(devWeather === w ? null : w)}
+                className={`${DEV_BUTTON} ${shownWeather === w ? "text-white" : ""}`}
+              >
+                {WEATHER_LABEL[w]}
+              </button>
+            ))}
+          </div>
+          <div className="flex h-full">
+            {TIMES.map((t) => (
+              <button
+                key={t}
+                aria-pressed={devTime === t}
+                onClick={() => setDevTime(devTime === t ? null : t)}
+                className={`${DEV_BUTTON} ${(devTime ?? time) === t ? "text-white" : ""}`}
+              >
+                {TIME_LABEL[t]}
+              </button>
+            ))}
+          </div>
           <button
             aria-pressed={!devWeather && !devTime}
             onClick={() => {
               setDevWeather(null);
               setDevTime(null);
             }}
-            className={DEV_BUTTON}
+            className={`${DEV_BUTTON} ${!devWeather && !devTime ? "text-white" : ""}`}
           >
             自動
           </button>
@@ -165,5 +172,6 @@ export default function BackgroundVideo({ weather, overlay = true }: Props) {
   );
 }
 
+// before: 細い線でも押しやすいよう、当たり判定だけ上に広げる / after: 固定中の印
 const DEV_BUTTON =
-  "[writing-mode:vertical-rl] decoration-1 underline-offset-4 transition-colors hover:text-white aria-pressed:text-white aria-pressed:underline";
+  "relative h-full px-1 transition-colors hover:text-white focus-visible:-outline-offset-1! sm:px-1.5 before:absolute before:inset-x-0 before:-top-3 before:bottom-0 after:absolute after:inset-x-1 after:bottom-0.5 after:h-px after:bg-white after:opacity-0 after:transition-opacity aria-pressed:after:opacity-100 sm:after:inset-x-1.5";

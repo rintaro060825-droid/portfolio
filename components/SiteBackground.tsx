@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { Weather } from "@/lib/scene";
 import BackgroundVideo from "./BackgroundVideo";
+import SkyLoader, { skyKnown } from "./SkyLoader";
 
 export default function SiteBackground() {
   const [weather, setWeather] = useState<Weather>();
@@ -12,18 +13,26 @@ export default function SiteBackground() {
 
     fetch("/api/weather")
       .then((res) => res.json())
-      .then((data: { weather?: Weather; code?: number | null }) => {
-        // code が null のときは取得失敗時の仮の値なので、実際の天気としては扱わない
-        if (!cancelled && data.weather && data.code != null) {
-          setWeather(data.weather);
-        }
-      })
-      .catch(() => {});
+      // code が null のときは取得失敗時の仮の値なので、実際の天気としては扱わない
+      .then((data: { weather?: Weather; code?: number | null }) =>
+        data.code != null ? data.weather : undefined,
+      )
+      .catch(() => undefined)
+      .then((known) => {
+        if (cancelled) return;
+        if (known) setWeather(known);
+        skyKnown(known);
+      });
 
     return () => {
       cancelled = true;
     };
   }, []);
 
-  return <BackgroundVideo weather={weather} />;
+  return (
+    <>
+      <SkyLoader />
+      <BackgroundVideo weather={weather} />
+    </>
+  );
 }
