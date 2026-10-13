@@ -57,7 +57,7 @@ body {
 .nav-mark {
   view-transition-name: nav-mark;
 }
-/* The development sky line (BackgroundVideo.tsx) stays put above the moving paper. */
+/* The development sky dots (BackgroundVideo.tsx) stay put above the moving paper. */
 .sky-line {
   view-transition-name: sky-line;
 }

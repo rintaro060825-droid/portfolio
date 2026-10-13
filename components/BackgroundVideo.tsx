@@ -47,7 +47,8 @@ export default function BackgroundVideo({ weather, overlay = true }: Props) {
   const isDev = process.env.NODE_ENV === "development";
 
   const shownWeather = devWeather ?? weather;
-  const scene: Scene = sceneId(shownWeather ?? "clear", devTime ?? time ?? "night");
+  const shownTime = devTime ?? time ?? "night";
+  const scene: Scene = sceneId(shownWeather ?? "clear", shownTime);
 
   // シーンが変わったら読み込み状態をリセット（レンダー中に反映）
   const [prevScene, setPrevScene] = useState(scene);
@@ -112,66 +113,92 @@ export default function BackgroundVideo({ weather, overlay = true }: Props) {
         {overlay && <div className="absolute inset-0 bg-black/25" />}
       </div>
 
-      {/* 開発中だけ出る空の切り替え。画面の下端に敷く一本の線で、写真のデータ表示のように読む。
-          白い文字＝いま出ている空、下線＝手で固定している値（もう一度押すと外れる） */}
+      {/* 開発中だけ出る空の切り替え。空の上に直接置く色の粒で、粒の色＝押すと出る空（天気の粒は昼の色で見せる。夜はどれも暗くて見分けがつかない）。
+          輪＝いま出ている空（濃い輪は手で固定中、もう一度押すと外れる）。
+          md 以上はヘッダーの中央、それより狭い画面では左端に縦に並ぶ */}
       {isDev && (
         <div
           role="group"
           lang="ja"
           aria-label="空の切り替え（開発用）"
-          className="sky-line fixed inset-x-0 bottom-0 z-50 box-content flex h-5 items-center justify-end gap-2 bg-black pr-5 pb-[env(safe-area-inset-bottom)] pl-4 text-xs leading-none whitespace-nowrap text-white/60 sm:gap-5 sm:pr-[2.125rem]"
+          title={`${videoSrc(scene)} ${noVideo ? "動画なし" : ready ? "再生中" : "読込中"}`}
+          className="sky-line sky-text fixed top-1/2 left-0 z-50 flex -translate-y-1/2 flex-col items-center gap-2 text-xs leading-none whitespace-nowrap text-white/70 md:absolute md:top-[1.125rem] md:left-1/2 md:-translate-x-1/2 md:translate-y-0 md:flex-row md:gap-4"
         >
-          <p className="hidden pr-1.5 sm:block" title={videoSrc(scene)}>
-            <span lang="en" className="text-white">
-              {scene}
-            </span>
-            <span lang="en">.mp4</span>
-            <span
-              className={`ml-3 ${noVideo ? "" : ready ? "text-white" : "animate-pulse"}`}
-            >
-              {noVideo ? "動画なし" : ready ? "再生中" : "読込中"}
-            </span>
-          </p>
-          <div className="flex h-full">
+          <div className="flex flex-col md:flex-row">
             {WEATHERS.map((w) => (
-              <button
+              <DevDot
                 key={w}
-                aria-pressed={devWeather === w}
+                label={WEATHER_LABEL[w]}
+                sky={SCENE_GRADIENT[sceneId(w, "day")]}
+                shown={shownWeather === w}
+                pinned={devWeather === w}
                 onClick={() => setDevWeather(devWeather === w ? null : w)}
-                className={`${DEV_BUTTON} ${shownWeather === w ? "text-white" : ""}`}
-              >
-                {WEATHER_LABEL[w]}
-              </button>
+              />
             ))}
           </div>
-          <div className="flex h-full">
+          <div className="flex flex-col md:flex-row">
             {TIMES.map((t) => (
-              <button
+              <DevDot
                 key={t}
-                aria-pressed={devTime === t}
+                label={TIME_LABEL[t]}
+                sky={SCENE_GRADIENT[sceneId(shownWeather ?? "clear", t)]}
+                shown={shownTime === t}
+                pinned={devTime === t}
                 onClick={() => setDevTime(devTime === t ? null : t)}
-                className={`${DEV_BUTTON} ${(devTime ?? time) === t ? "text-white" : ""}`}
-              >
-                {TIME_LABEL[t]}
-              </button>
+              />
             ))}
           </div>
-          <button
-            aria-pressed={!devWeather && !devTime}
+          <DevDot
+            label="自動"
+            sky={AUTO_SKY}
+            shown={!devWeather && !devTime}
+            pinned={!devWeather && !devTime}
             onClick={() => {
               setDevWeather(null);
               setDevTime(null);
             }}
-            className={`${DEV_BUTTON} ${!devWeather && !devTime ? "text-white" : ""}`}
-          >
-            自動
-          </button>
+          />
         </div>
       )}
     </>
   );
 }
 
-// before: 細い線でも押しやすいよう、当たり判定だけ上に広げる / after: 固定中の印
-const DEV_BUTTON =
-  "relative h-full px-1 transition-colors hover:text-white focus-visible:-outline-offset-1! sm:px-1.5 before:absolute before:inset-x-0 before:-top-3 before:bottom-0 after:absolute after:inset-x-1 after:bottom-0.5 after:h-px after:bg-white after:opacity-0 after:transition-opacity aria-pressed:after:opacity-100 sm:after:inset-x-1.5";
+// 自動の粒：一日の空を一周
+const AUTO_SKY = "linear-gradient(90deg, #f0a978, #74b4e8, #f2803f, #1b2a4d)";
+
+function DevDot({
+  label,
+  sky,
+  shown,
+  pinned,
+  onClick,
+}: {
+  label: string;
+  sky: string;
+  shown: boolean;
+  pinned: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      aria-pressed={pinned}
+      aria-label={label}
+      onClick={onClick}
+      className={`group flex items-center gap-1.5 p-1.5 transition-colors hover:text-white ${
+        shown ? "text-white" : ""
+      }`}
+    >
+      <span
+        className={`block size-4 rounded-full shadow-[inset_0_0_0_1px_rgb(255_255_255/0.3),0_1px_8px_rgb(0_0_0/0.3)] outline-2 outline-offset-2 transition-[outline-color,scale] duration-300 group-hover:scale-110 ${
+          pinned ? "outline-white" : shown ? "outline-white/50" : "outline-transparent"
+        }`}
+        style={{ background: sky }}
+      />
+      {/* 文字は広い画面だけ。狭いときは粒の色で読む */}
+      <span aria-hidden className="hidden xl:inline">
+        {label}
+      </span>
+    </button>
+  );
+}
