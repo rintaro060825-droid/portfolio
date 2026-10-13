@@ -41,21 +41,31 @@ function toRows(works: Work[]) {
 export default function WorksGallery({ works }: { works: Work[] }) {
   const lightbox = useRef<HTMLDialogElement>(null);
   const [index, setIndex] = useState(0);
+  // What the lightbox shows until the full-size photo has loaded: the
+  // thumbnail the visitor was just looking at, rather than a blur.
+  const [preview, setPreview] = useState<string>();
   const selected = works[index];
 
   const thumbs = useRef<(HTMLButtonElement | null)[]>([]);
+  const touch = useRef<{ x: number; y: number } | null>(null);
+
+  const show = (i: number) => {
+    const img = thumbs.current[i]?.querySelector("img");
+    setPreview(img?.complete && img.naturalWidth ? img.currentSrc : undefined);
+    setIndex(i);
+  };
 
   const step = (by: number) =>
-    transition(() => setIndex((i) => (i + by + works.length) % works.length));
+    transition(by > 0 ? "next" : "prev", () => show((index + by + works.length) % works.length));
 
   // The thumbnail and the lightbox photo share one view-transition name, so
   // the photo grows out of its place in the gallery and settles back into it.
   const open = (i: number) => {
     const thumb = thumbs.current[i];
     if (thumb) thumb.style.viewTransitionName = "photo";
-    transition(() => {
+    transition("open", () => {
       if (thumb) thumb.style.viewTransitionName = "";
-      setIndex(i);
+      show(i);
       lightbox.current?.showModal();
     });
   };
@@ -65,7 +75,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
     const clear = () => {
       if (thumb) thumb.style.viewTransitionName = "";
     };
-    const closing = transition(() => {
+    const closing = transition("close", () => {
       lightbox.current?.close();
       if (!thumb) return;
       thumb.style.viewTransitionName = "photo";
@@ -154,17 +164,36 @@ export default function WorksGallery({ works }: { works: Work[] }) {
           if (e.key === "ArrowRight") step(1);
           if (e.key === "ArrowLeft") step(-1);
         }}
+        // A sideways swipe steps too, unless the visitor has pinched in to look closer.
+        onTouchStart={(e) => {
+          const t = e.touches;
+          touch.current = t.length === 1 ? { x: t[0].clientX, y: t[0].clientY } : null;
+        }}
+        onTouchEnd={(e) => {
+          const from = touch.current;
+          touch.current = null;
+          if (!from || (window.visualViewport?.scale ?? 1) > 1.01) return;
+          if ((e.target as Element).closest("video")) return;
+          const dx = e.changedTouches[0].clientX - from.x;
+          const dy = e.changedTouches[0].clientY - from.y;
+          if (Math.abs(dx) > 56 && Math.abs(dx) > 2 * Math.abs(dy)) step(dx < 0 ? 1 : -1);
+        }}
       >
         <div className="min-h-0 cursor-zoom-out p-3 pb-0 sm:p-8 sm:pb-0">
-          {/* The <img> box is exactly the fitted photo, so the blurred
-              placeholder sits right where the photo will appear. */}
+          {/* The <img> box is exactly the fitted photo, so the placeholder (the
+              thumbnail, or failing that a blur) sits right where it will appear. */}
           <div className="relative h-full">
             {"image" in selected ? (
               <Image
                 key={selected.image.src}
                 src={selected.image}
                 alt={selected.title}
-                placeholder="blur"
+                placeholder={preview ? "empty" : "blur"}
+                style={
+                  preview
+                    ? { backgroundImage: `url("${preview}")`, backgroundSize: "cover" }
+                    : undefined
+                }
                 sizes="100vw"
                 className={LIGHTBOX}
               />
@@ -212,8 +241,29 @@ const THUMB =
   "h-auto w-full transition-transform duration-700 ease-out group-hover:scale-[1.025] motion-reduce:transition-none";
 const LIGHTBOX = "lightbox-photo absolute inset-0 m-auto h-auto max-h-full w-auto max-w-full";
 
-/** Runs a change as a view transition where the browser has them. */
-function transition(update: () => void) {
+let current: ViewTransition | undefined;
+
+/**
+ * Runs a change as a view transition where the browser has them. While it
+ * runs, <html data-vt={kind}> tells globals.css which lightbox move this is,
+ * and data-vt-phase appears once the new state is in place.
+ */
+function transition(kind: "open" | "close" | "next" | "prev", update: () => void) {
   if (!document.startViewTransition) return void update();
-  return document.startViewTransition(() => flushSync(update));
+  const root = document.documentElement;
+  root.dataset.vt = kind;
+  delete root.dataset.vtPhase;
+  const vt = document.startViewTransition(() => {
+    flushSync(update);
+    root.dataset.vtPhase = "new";
+  });
+  current = vt;
+  const done = () => {
+    // A newer transition (a quick second key press) now owns the attributes.
+    if (current !== vt) return;
+    delete root.dataset.vt;
+    delete root.dataset.vtPhase;
+  };
+  vt.finished.then(done, done);
+  return vt;
 }

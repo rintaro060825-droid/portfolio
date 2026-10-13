@@ -6,6 +6,8 @@
   --foreground: #000000;
   /* The one easing curve for everything that moves: quick away, long settle. */
   --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  /* One shadow for every piece of paper, so none appears or vanishes mid-transition. */
+  --paper-shadow: 0 1.5rem 4.5rem rgb(0 0 0 / 0.3);
 }
 
 @theme inline {
@@ -45,8 +47,13 @@ body {
 /* SkyNote: show only the line for the weather BackgroundVideo reports on <html>. */
 .sky-note {
   min-height: 2.75em;
-  /* The caption travels between the header (home) and the title row. */
+}
+/* Beside a page title the caption holds still while the title changes around it. */
+.sky-note-held {
   view-transition-name: sky-note;
+}
+.nav-mark {
+  view-transition-name: nav-mark;
 }
 .sky-note > span {
   display: none;
@@ -77,11 +84,11 @@ body {
 .paper {
   background: var(--background);
   color: var(--foreground);
+  box-shadow: var(--paper-shadow);
 }
 @media (min-width: 40rem) {
   .paper {
     margin: 0 2.5rem 2.5rem;
-    box-shadow: 0 2rem 5rem -1.5rem rgb(0 0 0 / 0.45);
   }
 }
 
@@ -271,7 +278,8 @@ body {
   align-self: center;
   width: min(100% - 3rem, 56rem);
   margin-bottom: 3rem;
-  /* drop-shadow, not box-shadow: the mask on the face would clip a box-shadow */
+  /* --paper-shadow as a drop-shadow (whose blur is half a box-shadow's):
+     the mask on the face would clip a box-shadow */
   filter: drop-shadow(0 1.5rem 2.25rem rgb(0 0 0 / 0.3));
 }
 .postcard-face {
@@ -450,14 +458,116 @@ body {
   animation: title-out 0.2s ease-in both;
 }
 ::view-transition-new(.title-in) {
-  animation: title-in 0.75s var(--ease) 0.12s both;
+  animation: title-in 0.75s var(--ease) 0.18s both;
 }
-/* The lightbox photo flies above the page fading behind it. */
-::view-transition-group(photo) {
-  z-index: 1;
+/* Home gives way quickly and comes back gently. */
+::view-transition-old(.hero-out) {
+  animation: fade-away 0.3s ease-in both;
+}
+::view-transition-new(.hero-in) {
+  animation: fade-away 0.6s ease-out 0.1s both reverse;
+}
+/*
+ * Between two inner pages the paper itself never fades. Its edges move to the
+ * new shape while the old content washes out to blank paper, then the new
+ * content develops on it. Content keeps its own size (no stretching) and the
+ * moving edges crop it.
+ */
+::view-transition-group(.sheet) {
+  overflow: clip;
+  box-shadow: var(--paper-shadow);
+}
+::view-transition-image-pair(.sheet) {
+  animation: paper-hold 0.6s linear both;
+}
+::view-transition-old(.sheet),
+::view-transition-new(.sheet) {
+  inline-size: auto;
+  block-size: auto;
+  /* crop each snapshot to its paper: the group carries the one shadow */
+  overflow: clip;
+}
+::view-transition-old(.sheet) {
+  animation: fade-away 0.2s ease-in both;
+}
+::view-transition-new(.sheet) {
+  animation: fade-away 0.3s ease-out 0.2s both reverse;
+}
+/* Blank paper under the content; it lets go at the very end (and takes hold
+   at the very start) so the postcard's stamp window opens and closes softly. */
+@keyframes paper-hold {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  12%,
+  84% {
+    background-color: var(--background);
+  }
+}
+
+/*
+ * Lightbox. WorksGallery.tsx sets <html data-vt="open | close | next | prev">
+ * for the length of each of its transitions, and data-vt-phase once the new
+ * state is in place.
+ */
+/* The page's own held pieces are underneath the dialog: keep them out of it. */
+:root[data-vt] :is(.sky-note, .nav-mark) {
+  view-transition-name: none;
 }
 .lightbox-photo {
   view-transition-name: photo;
+}
+::view-transition-group(photo) {
+  z-index: 1;
+}
+/* Opening, only the arriving photo is drawn, growing out of the thumbnail's
+   place; closing, only the leaving one, settling back into it. Two renderings
+   of one photograph never overlap, so there is no ghosting. */
+:root[data-vt="open"]::view-transition-old(photo),
+:root[data-vt="close"]::view-transition-new(photo) {
+  display: none;
+}
+:root[data-vt="open"]::view-transition-new(photo),
+:root[data-vt="close"]::view-transition-old(photo) {
+  animation: none;
+}
+/* Stepping: the photo leaves towards where it came from and the next arrives
+   from the other side, each in its own proportions. */
+:root:is([data-vt="next"], [data-vt="prev"]) .lightbox-photo {
+  view-transition-name: photo-out;
+}
+:root:is([data-vt="next"], [data-vt="prev"])[data-vt-phase] .lightbox-photo {
+  view-transition-name: photo-in;
+}
+:root[data-vt="next"] {
+  --step: 1;
+}
+:root[data-vt="prev"] {
+  --step: -1;
+}
+::view-transition-old(photo-out) {
+  animation: step-out 0.22s ease-in both;
+}
+::view-transition-new(photo-in) {
+  animation: step-in 0.5s var(--ease) 0.12s both;
+}
+@keyframes step-out {
+  to {
+    opacity: 0;
+    translate: calc(var(--step) * -1.25rem) 0;
+  }
+}
+@keyframes step-in {
+  from {
+    opacity: 0;
+    translate: calc(var(--step) * 1.25rem) 0;
+  }
+}
+@keyframes fade-away {
+  to {
+    opacity: 0;
+  }
 }
 @keyframes sheet-rise {
   from {

@@ -23,7 +23,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <SiteBackground />
         <div className="relative z-0 flex min-h-full flex-1 flex-col">
           <Header />
-          {children}
+          {/* <main> lives here rather than in the pages so that each page's
+              <ViewTransition>s are the outermost things it inserts: React
+              only plays enter and exit animations for those. */}
+          <main className="flex flex-1 flex-col">{children}</main>
         </div>
       </body>
     </html>

@@ -46,8 +46,7 @@ export default function Header() {
             {pathname === href && (
               <span
                 aria-hidden
-                className="absolute inset-x-0 -bottom-1.5 h-px bg-current"
-                style={{ viewTransitionName: "nav-mark" }}
+                className="nav-mark absolute inset-x-0 -bottom-1.5 h-px bg-current"
               />
             )}
           </Link>
