@@ -1,0 +1,33 @@
+import { ViewTransition } from "react";
+import SkyNote from "./SkyNote";
+
+/** An inner page: a quiet title on the sky, the content on a piece of paper below it. */
+export default function Sheet({
+  title,
+  className = "paper flex-1 px-6 py-10 sm:px-12 sm:py-14",
+  children,
+}: {
+  title: string;
+  /** The paper itself; pages that need another shape (works, contact) pass their own. */
+  className?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <main className="flex flex-1 flex-col">
+      <div className="flex flex-wrap items-end justify-between gap-x-10 gap-y-4 px-6 pt-10 pb-6 sm:px-10 sm:pt-16 sm:pb-8">
+        {/* Between pages the old title lifts away and the new one rises in. */}
+        <ViewTransition enter="title-in" exit="title-out" default="none">
+          <h1 className="sky-text text-[clamp(2.25rem,5.5vw,4rem)] leading-none tracking-[-0.02em]">
+            {title}
+          </h1>
+        </ViewTransition>
+        <SkyNote className="sm:text-right" />
+      </div>
+      {/* One piece of paper for the whole site: it slides up from under the sky,
+          reshapes between inner pages while its content changes, and slides away. */}
+      <ViewTransition name="sheet" share="sheet" enter="sheet-in" exit="sheet-out" default="none">
+        <div className={className}>{children}</div>
+      </ViewTransition>
+    </main>
+  );
+}

@@ -1,23 +1,47 @@
+import Sheet from "@/components/Sheet";
+import { CopyButton, TsujidoTime } from "./Live";
+
+const EMAIL = "rintaro060825@gmail.com";
+
 export default function Contact() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 text-center">
-      <h1 className="text-2xl font-semibold tracking-tight">Contact</h1>
-      <div className="mt-6 flex flex-col gap-3 text-zinc-600 dark:text-zinc-400">
-        <a
-          href="https://instagram.com/med_dropsss"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="hover:text-foreground"
-        >
-          Instagram — @med_dropsss
-        </a>
-        <a
-          href="mailto:rintaro060825@gmail.com"
-          className="hover:text-foreground"
-        >
-          Email — rintaro060825@gmail.com
-        </a>
+    <Sheet title="Contact" className="postcard">
+      {/* The stamp is a window cut through the card (see .postcard-face):
+          what shows in it is the sky itself, with the hour it is there. */}
+      <p className="postcard-stamp sky-text">
+        <span className="sr-only">Time in Tsujido: </span>
+        <span lang="ja" aria-hidden>
+          辻堂
+        </span>
+        <TsujidoTime />
+      </p>
+      <div className="postcard-face">
+        <p className="postcard-message statement">
+          Write to me about photographs, retouching or a logo. Mail or
+          Instagram, whichever is easier.
+        </p>
+        <dl className="postcard-address">
+          <div>
+            <dt>Mail</dt>
+            <dd>
+              <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
+              <CopyButton text={EMAIL} />
+            </dd>
+          </div>
+          <div>
+            <dt>Instagram</dt>
+            <dd>
+              <a
+                href="https://instagram.com/med_dropsss"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                @med_dropsss
+              </a>
+            </dd>
+          </div>
+        </dl>
       </div>
-    </div>
+    </Sheet>
   );
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import {
   type Weather,
   type TimeOfDay,
@@ -17,17 +17,26 @@ import {
 } from "@/lib/scene";
 
 type Props = {
-  /** 表示したい天候。未指定なら "clear" */
+  /** 表示したい天候。実際の天気が分かるまでは未指定（背景は "clear" で描く） */
   weather?: Weather;
   /** 文字を読みやすくする暗幕を敷くか */
   overlay?: boolean;
 };
 
-export default function BackgroundVideo({
-  weather = "clear",
-  overlay = true,
-}: Props) {
-  const [time, setTime] = useState<TimeOfDay>(() => getTimeOfDay());
+// 1分ごとに時間帯を見直す
+function everyMinute(onTick: () => void) {
+  const id = setInterval(onTick, 60_000);
+  return () => clearInterval(id);
+}
+
+export default function BackgroundVideo({ weather, overlay = true }: Props) {
+  // サーバーは閲覧者の時刻を知らないので null。
+  // useState で初期化すると、ビルドした時刻の空が HTML に焼き付いたままになる
+  const time = useSyncExternalStore<TimeOfDay | null>(
+    everyMinute,
+    getTimeOfDay,
+    () => null,
+  );
   const [ready, setReady] = useState(false);
   const [failed, setFailed] = useState(false);
   const [allowMotion, setAllowMotion] = useState(false);
@@ -37,7 +46,8 @@ export default function BackgroundVideo({
   const [devTime, setDevTime] = useState<TimeOfDay | null>(null);
   const isDev = process.env.NODE_ENV === "development";
 
-  const scene: Scene = sceneId(devWeather ?? weather, devTime ?? time);
+  const shownWeather = devWeather ?? weather;
+  const scene: Scene = sceneId(shownWeather ?? "clear", devTime ?? time ?? "night");
 
   // シーンが変わったら読み込み状態をリセット（レンダー中に反映）
   const [prevScene, setPrevScene] = useState(scene);
@@ -47,11 +57,12 @@ export default function BackgroundVideo({
     setFailed(false);
   }
 
-  // 1分ごとに時間帯を見直す
+  // 空の注記（SkyNote）が CSS から読む。実際の天気が分かるまでは付けない
   useEffect(() => {
-    const id = setInterval(() => setTime(getTimeOfDay()), 60_000);
-    return () => clearInterval(id);
-  }, []);
+    const root = document.documentElement;
+    if (shownWeather) root.dataset.weather = shownWeather;
+    else delete root.dataset.weather;
+  }, [shownWeather]);
 
   // 動きを減らす設定 / 小さい画面では動画を再生しない
   useEffect(() => {
@@ -67,12 +78,16 @@ export default function BackgroundVideo({
     };
   }, []);
 
+  const noVideo = failed || !allowMotion;
+
   return (
     <>
-      <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden">
-        {/* 常に敷かれる下地。動画が無くても成立する */}
+      <div aria-hidden className="fixed inset-0 -z-10 overflow-hidden bg-black">
+        {/* 常に敷かれる下地。動画が無くても成立する。時刻が分かったらフェードイン */}
         <div
-          className="absolute inset-0 transition-[background] duration-[1200ms]"
+          className={`absolute inset-0 transition-[background,opacity] duration-[1200ms] ${
+            time ? "opacity-100" : "opacity-0"
+          }`}
           style={{ background: SCENE_GRADIENT[scene] }}
         />
 
@@ -97,49 +112,58 @@ export default function BackgroundVideo({
         {overlay && <div className="absolute inset-0 bg-black/25" />}
       </div>
 
+      {/* 開発中だけ出る空の切り替え。画面右端に縦書きで置き、ページの上には載せない */}
       {isDev && (
-        <div className="fixed bottom-3 left-3 z-50 flex flex-col gap-1 rounded-lg bg-black/70 p-2 text-[11px] text-white backdrop-blur">
-          <div className="flex gap-1">
-            {WEATHERS.map((w) => (
-              <button
-                key={w}
-                onClick={() => setDevWeather(w)}
-                className={`rounded px-2 py-1 ${
-                  (devWeather ?? weather) === w ? "bg-white text-black" : "bg-white/20"
-                }`}
-              >
-                {WEATHER_LABEL[w]}
-              </button>
-            ))}
-          </div>
-          <div className="flex gap-1">
-            {TIMES.map((t) => (
-              <button
-                key={t}
-                onClick={() => setDevTime(t)}
-                className={`rounded px-2 py-1 ${
-                  (devTime ?? time) === t ? "bg-white text-black" : "bg-white/20"
-                }`}
-              >
-                {TIME_LABEL[t]}
-              </button>
-            ))}
-          </div>
-          <div className="opacity-60">
-            {scene}
-            {failed ? " · 動画なし" : ready ? " · 再生中" : " · 読込中"}
-          </div>
+        <div
+          role="group"
+          lang="ja"
+          aria-label="空の切り替え（開発用）"
+          className="fixed top-1/2 right-1 z-50 flex w-7 -translate-y-1/2 flex-col items-center gap-2.5 rounded-full bg-black/35 py-4 text-xs leading-none tracking-[0.14em] text-white/55 backdrop-blur-md"
+        >
+          {/* 動画の状態：塗り＝再生中、点滅＝読込中、輪＝動画なし */}
+          <span
+            title={`${scene} · ${noVideo ? "動画なし" : ready ? "再生中" : "読込中"}`}
+            className={`size-1.5 rounded-full border border-white ${
+              noVideo ? "" : ready ? "bg-white" : "animate-pulse bg-white"
+            }`}
+          />
+          {WEATHERS.map((w) => (
+            <button
+              key={w}
+              aria-pressed={shownWeather === w}
+              onClick={() => setDevWeather(w)}
+              className={DEV_BUTTON}
+            >
+              {WEATHER_LABEL[w]}
+            </button>
+          ))}
+          <span className="h-px w-3 bg-white/30" />
+          {TIMES.map((t) => (
+            <button
+              key={t}
+              aria-pressed={(devTime ?? time) === t}
+              onClick={() => setDevTime(t)}
+              className={DEV_BUTTON}
+            >
+              {TIME_LABEL[t]}
+            </button>
+          ))}
+          <span className="h-px w-3 bg-white/30" />
           <button
+            aria-pressed={!devWeather && !devTime}
             onClick={() => {
               setDevWeather(null);
               setDevTime(null);
             }}
-            className="rounded bg-white/20 px-2 py-1"
+            className={DEV_BUTTON}
           >
-            自動に戻す
+            自動
           </button>
         </div>
       )}
     </>
   );
 }
+
+const DEV_BUTTON =
+  "[writing-mode:vertical-rl] decoration-1 underline-offset-4 transition-colors hover:text-white aria-pressed:text-white aria-pressed:underline";

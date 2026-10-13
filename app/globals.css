@@ -1,25 +1,492 @@
 @import "tailwindcss";
 
+/* The only colour on the site is the sky and the photographs. */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #000000;
+  /* The one easing curve for everything that moves: quick away, long settle. */
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: "Times New Roman", Times, Georgia, serif;
+  --font-sans: var(--font-mincho), "Hiragino Mincho ProN", "Yu Mincho", "Times New Roman", serif;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #000000;
+    --foreground: #ffffff;
   }
 }
 
 body {
   background: var(--background);
+  /* Whatever is not on a sheet sits on the sky, so it is white in both colour schemes. */
+  color: #ffffff;
+  font-family: var(--font-mincho), "Hiragino Mincho ProN", "Yu Mincho", "Times New Roman", serif;
+  font-weight: 500;
+  font-synthesis: none;
+}
+
+:focus-visible {
+  outline: 1px solid currentColor;
+  outline-offset: 4px;
+}
+
+/* Small text on the sky: keeps it readable over bright skies and, later, video. */
+.sky-text {
+  text-shadow:
+    0 0 2px rgb(0 0 0 / 0.25),
+    0 0 2.2em rgb(0 0 0 / 0.28);
+}
+
+/* SkyNote: show only the line for the weather BackgroundVideo reports on <html>. */
+.sky-note {
+  min-height: 2.75em;
+  /* The caption travels between the header (home) and the title row. */
+  view-transition-name: sky-note;
+}
+.sky-note > span {
+  display: none;
+}
+:root[data-weather="rain"] .sky-note > [data-weather="rain"],
+:root[data-weather="cloudy"] .sky-note > [data-weather="cloudy"],
+:root[data-weather="clear"] .sky-note > [data-weather="clear"] {
+  display: block;
+}
+
+/* The lead sentence of a text page: a comfortable reading size, not a shout. */
+.statement {
+  max-width: 26em;
+  font-size: clamp(1.25rem, 2.3vw, 1.75rem);
+  line-height: 1.55;
+}
+.statement a,
+.about-links a {
+  text-decoration: underline 1px;
+  text-underline-offset: 0.22em;
+}
+.statement a:hover,
+.about-links a:hover {
+  text-decoration-thickness: 2px;
+}
+
+/* Inner pages sit on paper laid over the sky; from tablet up the sky frames it. */
+.paper {
+  background: var(--background);
   color: var(--foreground);
-  font-family: "Times New Roman", Times, Georgia, serif;
+}
+@media (min-width: 40rem) {
+  .paper {
+    margin: 0 2.5rem 2.5rem;
+    box-shadow: 0 2rem 5rem -1.5rem rgb(0 0 0 / 0.45);
+  }
+}
+
+/*
+ * Home: the name evaporates into the sky as the page scrolls, and night rises
+ * from the horizon behind it. Hero.tsx writes the eased scroll progress (0–1)
+ * to --p; everything here follows it. Nothing spins and nothing flies: letters
+ * only drift, soften and fade.
+ */
+.hero {
+  --p: 0;
+  min-height: 220vh;
+}
+
+.hero-name {
+  font-size: 21vw;
+  line-height: 0.95;
+  letter-spacing: -0.03em;
+}
+@media (min-width: 40rem) {
+  .hero-name {
+    font-size: min(12vw, 12rem);
+  }
+}
+
+/* --q is this letter's own 0–1: it starts after its delay --d. The word
+   breathes out (--o), each letter rises a little (--lift) and goes soft. */
+.hero-letter {
+  --q: clamp(0, calc((var(--p) - var(--d)) / 0.3), 1);
+  display: inline-block;
+  opacity: calc(1 - var(--q));
+  filter: blur(calc(var(--q) * 0.05em));
+  transform: translate3d(
+      calc(var(--o) * var(--q) * 0.1em),
+      calc(var(--q) * var(--lift) * -0.4em),
+      0
+    )
+    scale(calc(1 + var(--q) * 0.06));
+  will-change: transform, opacity, filter;
+}
+
+.hero-fade {
+  opacity: calc(1 - var(--p) * 6);
+}
+
+/* The fireworks photograph rises from the bottom edge behind a soft horizon. */
+.hero-sparks {
+  --w: clamp(0, calc((var(--p) - 0.1) / 0.55), 1);
+  opacity: 0.88;
+  mask-image: linear-gradient(
+    to top,
+    #000 calc(var(--w) * 150% - 50%),
+    transparent calc(var(--w) * 150%)
+  );
+}
+.hero-sparks img {
+  transform: translateY(calc((1 - var(--w)) * 4%)) scale(1.1);
+  will-change: transform;
+}
+/* Shade the photograph behind the header and the link so both stay readable. */
+.hero-sparks::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(rgb(0 0 0 / 0.75), transparent 20%),
+    radial-gradient(ellipse 36% 24% at center, rgb(0 0 0 / 0.6), transparent);
+}
+.hero-cta {
+  --in: clamp(0, calc((var(--p) - 0.62) / 0.25), 1);
+  visibility: hidden;
+  opacity: var(--in);
+}
+.hero-cta a {
+  letter-spacing: -0.02em;
+}
+.hero[data-revealed] .hero-cta {
+  visibility: visible;
+}
+.hero[data-revealed] .hero-cue {
+  visibility: hidden;
+}
+
+/* A drop runs down the line under "Scroll", over and over. */
+.hero-cue-line {
+  width: 1px;
+  height: 2.75rem;
+  background: currentColor;
+  transform-origin: top;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  /* Arrival is the same gesture backwards: the name condenses out of the sky. */
+  .hero-letter {
+    animation: letter-in 1.4s var(--ease) backwards;
+    animation-delay: calc(var(--i) * 55ms + 150ms);
+  }
+  .hero-rise {
+    animation: rise-in 1s var(--ease) 1.1s backwards;
+  }
+  /* The link settles upward into the place the name left. */
+  .hero-cta a {
+    filter: blur(calc((1 - var(--in)) * 0.08em));
+    transform: translateY(calc((1 - var(--in)) * 0.35em));
+  }
+  .hero-cue-line {
+    animation: cue-drop 2.4s cubic-bezier(0.65, 0, 0.35, 1) infinite;
+  }
+}
+@keyframes letter-in {
+  from {
+    opacity: 0;
+    translate: 0 0.18em;
+    filter: blur(0.05em);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    translate: 0 0.6em;
+  }
+}
+@keyframes cue-drop {
+  0% {
+    transform: scaleY(0);
+    transform-origin: top;
+  }
+  45% {
+    transform: scaleY(1);
+    transform-origin: top;
+  }
+  55% {
+    transform: scaleY(1);
+    transform-origin: bottom;
+  }
+  100% {
+    transform: scaleY(0);
+    transform-origin: bottom;
+  }
+}
+
+/* Without motion the name stays: it and the link simply share the sky. */
+@media (prefers-reduced-motion: reduce) {
+  .hero {
+    min-height: 100svh;
+  }
+  .hero-cta {
+    position: static;
+    visibility: visible;
+    opacity: 1;
+    margin-top: 2.5rem;
+  }
+  .hero-cta a {
+    font-size: 1.75rem;
+  }
+  .hero-cue {
+    display: none;
+  }
+}
+
+/* Works: each photograph comes up softly as it scrolls into view. */
+@supports (animation-timeline: view()) {
+  @media (prefers-reduced-motion: no-preference) {
+    .work {
+      animation: unveil linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 60%;
+    }
+  }
+}
+@keyframes unveil {
+  from {
+    opacity: 0;
+    translate: 0 1.5rem;
+  }
+}
+
+/*
+ * Contact: a postcard. The message on the left, the address lines on the
+ * right, and where the stamp goes, a window cut through the card to the sky.
+ */
+.postcard {
+  --stamp-w: 4.5rem;
+  --stamp-h: 5.5rem;
+  --stamp-inset: 1.5rem;
+  position: relative;
+  align-self: center;
+  width: min(100% - 3rem, 56rem);
+  margin-bottom: 3rem;
+  /* drop-shadow, not box-shadow: the mask on the face would clip a box-shadow */
+  filter: drop-shadow(0 1.5rem 2.25rem rgb(0 0 0 / 0.3));
+}
+.postcard-face {
+  display: grid;
+  gap: 2.5rem;
+  padding: calc(var(--stamp-inset) + var(--stamp-h) + 1.75rem) 1.5rem 1.75rem;
+  background: var(--background);
+  color: var(--foreground);
+  /* everything, minus the stamp */
+  mask-image: linear-gradient(#000 0 0), linear-gradient(#000 0 0);
+  mask-position:
+    right var(--stamp-inset) top var(--stamp-inset),
+    0 0;
+  mask-size:
+    var(--stamp-w) var(--stamp-h),
+    100% 100%;
+  mask-repeat: no-repeat;
+  mask-composite: exclude;
+}
+.postcard-stamp {
+  position: absolute;
+  z-index: 1;
+  top: var(--stamp-inset);
+  right: var(--stamp-inset);
+  display: flex;
+  width: var(--stamp-w);
+  height: var(--stamp-h);
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-end;
+  padding-bottom: 0.75rem;
+  outline: 1px solid rgb(255 255 255 / 0.55);
+  outline-offset: -0.3125rem;
+  color: #ffffff;
+  font-size: 0.75rem;
+  line-height: 1.35;
+}
+.postcard-address > div {
+  --rule: color-mix(in srgb, currentColor 24%, transparent);
+  padding: 0.9rem 0 0.75rem;
+  border-bottom: 1px solid var(--rule);
+}
+.postcard-address dt {
+  font-size: 0.8125rem;
+  opacity: 0.6;
+}
+.postcard-address dd {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 0.3rem;
+  font-size: clamp(1rem, 1.7vw, 1.1875rem);
+  overflow-wrap: anywhere;
+}
+.postcard-address button {
+  font-size: 0.8125rem;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+.postcard-address button:hover {
+  opacity: 1;
+}
+.postcard-address :is(a, button):hover {
+  text-decoration: underline 1px;
+  text-underline-offset: 0.25em;
+}
+@media (min-width: 48rem) {
+  .postcard {
+    --stamp-inset: 2.25rem;
+  }
+  .postcard-face {
+    min-height: 25rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    padding: var(--stamp-inset);
+  }
+  .postcard-message {
+    padding-right: 2.5rem;
+  }
+  .postcard-address {
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    padding: calc(var(--stamp-h) + 2rem) 0 0 2.5rem;
+    border-left: 1px solid color-mix(in srgb, currentColor 24%, transparent);
+  }
+}
+
+/* About: a photograph down one side of the paper, the words beside it. */
+.about {
+  display: grid;
+}
+.about-photo {
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: cover;
+}
+.about-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+  padding: 2.25rem 1.5rem 2.75rem;
+}
+/* The three crafts, set the way the language is written. */
+.about-crafts {
+  display: flex;
+  gap: 2.25rem;
+}
+.about-crafts li {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.8125rem;
+}
+.about-crafts [lang="ja"] {
+  /* four characters tall, so the three English labels share a baseline */
+  height: 4.5em;
+  font-size: clamp(1.5rem, 2.6vw, 2rem);
+  letter-spacing: 0.12em;
+  line-height: 1;
+  writing-mode: vertical-rl;
+}
+.about-crafts li > :last-child {
+  opacity: 0.6;
+}
+.about-foot {
+  display: grid;
+  max-width: 30em;
+  gap: 1.5rem;
+  line-height: 1.7;
+}
+.about-foot > :first-child {
+  opacity: 0.75;
+}
+.about-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem 2rem;
+  font-size: 1.0625rem;
+}
+@media (min-width: 48rem) {
+  .about {
+    grid-template-columns: 2fr 3fr;
+  }
+  .about-photo {
+    aspect-ratio: auto;
+  }
+  .about-text {
+    justify-content: space-between;
+    gap: 3rem;
+    padding: 3.5rem 3.5rem 3.25rem 3.25rem;
+  }
+}
+
+/*
+ * Page transitions (see Sheet.tsx, Header.tsx, WorksGallery.tsx). The sky never
+ * moves; the sheet, the title, the nav mark and the photographs move over it.
+ */
+::view-transition {
+  pointer-events: none;
+}
+::view-transition-group(*) {
+  animation-duration: 0.6s;
+  animation-timing-function: var(--ease);
+}
+::view-transition-new(.sheet-in) {
+  animation: sheet-rise 0.75s var(--ease) both;
+}
+::view-transition-old(.sheet-out) {
+  animation: sheet-rise 0.5s var(--ease) both reverse;
+}
+::view-transition-old(.title-out) {
+  animation: title-out 0.2s ease-in both;
+}
+::view-transition-new(.title-in) {
+  animation: title-in 0.75s var(--ease) 0.12s both;
+}
+/* The lightbox photo flies above the page fading behind it. */
+::view-transition-group(photo) {
+  z-index: 1;
+}
+.lightbox-photo {
+  view-transition-name: photo;
+}
+@keyframes sheet-rise {
+  from {
+    translate: 0 80vh;
+  }
+}
+@keyframes title-out {
+  to {
+    opacity: 0;
+    translate: 0 -1.5rem;
+  }
+}
+@keyframes title-in {
+  from {
+    opacity: 0;
+    translate: 0 2.5rem;
+    filter: blur(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+  }
+}
+
+/* Works lightbox: the page behind a modal <dialog> should not scroll. */
+html:has(dialog[open]) {
+  overflow: hidden;
 }
