@@ -30,7 +30,7 @@ export default function About() {
           lane. I move between photography, editing, video and design, and I
           think each one makes me better at the others.
         </p>
-        <p className="mt-4 leading-relaxed text-zinc-600 dark:text-zinc-400">
+        <p className="mt-4 leading-relaxed text-white/75">
           Whatever the medium, I&apos;m chasing the same thing: making people
           stop for a second and feel something.
         </p>
@@ -41,7 +41,7 @@ export default function About() {
               <h2 className="text-sm font-medium tracking-widest uppercase">
                 {field.title}
               </h2>
-              <p className="mt-3 leading-relaxed text-zinc-600 dark:text-zinc-400">
+              <p className="mt-3 leading-relaxed text-white/75">
                 {field.text}
               </p>
             </section>

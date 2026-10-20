@@ -89,7 +89,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
                 )}
               </div>
             </button>
-            <figcaption className="text-xs tracking-wide text-zinc-500">
+            <figcaption className="text-xs tracking-wide text-white/70">
               {work.title}
             </figcaption>
           </figure>
@@ -122,7 +122,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
               className="h-auto max-h-[calc(100%-2rem)] w-auto max-w-full"
             />
           )}
-          <p className="text-xs tracking-wide text-zinc-500">
+          <p className="text-xs tracking-wide text-white/70">
             {selected.title}
           </p>
         </div>
