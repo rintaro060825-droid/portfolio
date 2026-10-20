@@ -24,7 +24,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
             <button
               type="button"
               onClick={() => setSelected(work)}
-              className="group relative aspect-square overflow-hidden rounded-lg bg-zinc-100 dark:bg-zinc-900"
+              className="group relative aspect-square overflow-hidden rounded-lg bg-white"
             >
               {work.category === "video" ? (
                 <>
@@ -38,7 +38,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
                     preload="metadata"
                     onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
                     onMouseLeave={(e) => e.currentTarget.pause()}
-                    className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                    className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                   />
                   <span
                     aria-hidden
@@ -52,7 +52,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
                   src={work.src}
                   alt={work.title}
                   fill
-                  className="object-cover transition-transform duration-300 group-hover:scale-105"
+                  className="object-contain transition-transform duration-300 group-hover:scale-105"
                   sizes="(min-width: 1024px) 33vw, 50vw"
                 />
               )}
