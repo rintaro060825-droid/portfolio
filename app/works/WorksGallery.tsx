@@ -13,8 +13,20 @@ export type Work = {
   poster?: string;
 };
 
+// A photo this close to 1:1 gets a thin white border; any other shape is
+// fitted whole, leaving white only above and below or at the sides.
+const SQUARE_TOLERANCE = 0.02;
+
 export default function WorksGallery({ works }: { works: Work[] }) {
   const [selected, setSelected] = useState<Work | null>(null);
+  const [squares, setSquares] = useState<Record<string, boolean>>({});
+
+  const measure = (src: string, width: number, height: number) => {
+    if (!width || !height) return;
+    if (Math.abs(width / height - 1) <= SQUARE_TOLERANCE) {
+      setSquares((prev) => (prev[src] ? prev : { ...prev, [src]: true }));
+    }
+  };
 
   return (
     <>
@@ -24,7 +36,9 @@ export default function WorksGallery({ works }: { works: Work[] }) {
             <button
               type="button"
               onClick={() => setSelected(work)}
-              className="group relative aspect-square overflow-hidden bg-white p-[8%] shadow-lg"
+              className={`group relative aspect-square overflow-hidden bg-white shadow-lg ${
+                squares[work.src] ? "p-[4%]" : ""
+              }`}
             >
               <div className="relative h-full w-full">
                 {work.category === "video" ? (
@@ -41,6 +55,13 @@ export default function WorksGallery({ works }: { works: Work[] }) {
                         e.currentTarget.play().catch(() => {})
                       }
                       onMouseLeave={(e) => e.currentTarget.pause()}
+                      onLoadedMetadata={(e) =>
+                        measure(
+                          work.src,
+                          e.currentTarget.videoWidth,
+                          e.currentTarget.videoHeight,
+                        )
+                      }
                       className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
                     />
                     <span
@@ -55,6 +76,13 @@ export default function WorksGallery({ works }: { works: Work[] }) {
                     src={work.src}
                     alt={work.title}
                     fill
+                    onLoad={(e) =>
+                      measure(
+                        work.src,
+                        e.currentTarget.naturalWidth,
+                        e.currentTarget.naturalHeight,
+                      )
+                    }
                     className="object-contain transition-transform duration-300 group-hover:scale-105"
                     sizes="(min-width: 1024px) 33vw, 50vw"
                   />
