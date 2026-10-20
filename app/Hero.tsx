@@ -1,65 +1,92 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 
 const NAME = "Rintaro Toda";
 
 const BOTTOM_THRESHOLD = 32;
 
+// Fraction of the remaining distance the letters cover each frame.
+// Lower = smoother and more lag behind the scroll position.
+const SMOOTHING = 0.12;
+
 export default function Hero() {
-  const [progress, setProgress] = useState(0);
   const [revealed, setRevealed] = useState(false);
-  const [viewport, setViewport] = useState({ width: 0, height: 0 });
+  const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
 
   useEffect(() => {
+    let target = 0;
+    let current = 0;
+    let frame = 0;
+
+    const apply = () => {
+      const throwDistance = Math.hypot(window.innerWidth, window.innerHeight);
+      letterRefs.current.forEach((el, i) => {
+        if (!el) return;
+        const angle = (i * 47 * Math.PI) / 180;
+        const distance = current * throwDistance;
+        const x = Math.cos(angle) * distance;
+        const y = Math.sin(angle) * distance;
+        const rotate = (i % 2 === 0 ? 1 : -1) * current * 360;
+        el.style.transform = `translate3d(${x}px, ${y}px, 0) rotate(${rotate}deg)`;
+      });
+    };
+
+    const tick = () => {
+      current += (target - current) * SMOOTHING;
+      if (Math.abs(target - current) < 0.0005) {
+        current = target;
+        frame = 0;
+      } else {
+        frame = requestAnimationFrame(tick);
+      }
+      apply();
+    };
+
     const onScroll = () => {
       const maxScroll =
         document.documentElement.scrollHeight - window.innerHeight;
-      setProgress(maxScroll > 0 ? window.scrollY / maxScroll : 0);
-      const atBottom =
+      target = maxScroll > 0 ? window.scrollY / maxScroll : 0;
+      setRevealed(
         window.scrollY + window.innerHeight >=
-        document.documentElement.scrollHeight - BOTTOM_THRESHOLD;
-      setRevealed(atBottom);
+          document.documentElement.scrollHeight - BOTTOM_THRESHOLD,
+      );
+      if (!frame) frame = requestAnimationFrame(tick);
     };
+
     const onResize = () => {
-      setViewport({ width: window.innerWidth, height: window.innerHeight });
       onScroll();
+      apply();
     };
-    onResize();
-    window.addEventListener("scroll", onScroll);
+
+    onScroll();
+    current = target;
+    apply();
+    window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onResize);
     return () => {
+      cancelAnimationFrame(frame);
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onResize);
     };
   }, []);
 
-  const throwDistance = Math.hypot(viewport.width, viewport.height);
-
   return (
     <div className="relative min-h-[300vh]">
-      <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden bg-background px-6 text-center">
+      <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
         <h1 className="flex flex-wrap justify-center text-4xl font-semibold tracking-tight sm:text-5xl">
-          {NAME.split("").map((char, i) => {
-            const angle = i * 47;
-            const distance = progress * throwDistance;
-            const x = Math.cos((angle * Math.PI) / 180) * distance;
-            const y = Math.sin((angle * Math.PI) / 180) * distance;
-            const rotate = (i % 2 === 0 ? 1 : -1) * progress * 360;
-
-            return (
-              <span
-                key={i}
-                className="inline-block"
-                style={{
-                  transform: `translate(${x}px, ${y}px) rotate(${rotate}deg)`,
-                }}
-              >
-                {char === " " ? " " : char}
-              </span>
-            );
-          })}
+          {NAME.split("").map((char, i) => (
+            <span
+              key={i}
+              ref={(el) => {
+                letterRefs.current[i] = el;
+              }}
+              className="inline-block will-change-transform"
+            >
+              {char === " " ? " " : char}
+            </span>
+          ))}
         </h1>
         <div
           className={`flex flex-col items-center transition-opacity duration-700 ${

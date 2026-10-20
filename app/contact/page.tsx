@@ -1,7 +1,7 @@
 export default function Contact() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center bg-background px-6 text-center">
-      <h1 className="text-2xl font-semibold tracking-tight">Contact</h1>
+    <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+      <h1 className="text-4xl font-semibold tracking-tight">Contact</h1>
       <div className="mt-6 flex flex-col gap-3 text-zinc-600 dark:text-zinc-400">
         <a
           href="https://instagram.com/med_dropsss"

@@ -18,7 +18,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
 
   return (
     <>
-      <div className="mt-10 grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
         {works.map((work) => (
           <figure key={work.src} className="flex flex-col gap-2">
             <button
@@ -53,11 +53,11 @@ export default function WorksGallery({ works }: { works: Work[] }) {
                   alt={work.title}
                   fill
                   className="object-cover transition-transform duration-300 group-hover:scale-105"
-                  sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                  sizes="(min-width: 1024px) 33vw, 50vw"
                 />
               )}
             </button>
-            <figcaption className="text-sm text-zinc-600 dark:text-zinc-400">
+            <figcaption className="text-xs tracking-wide text-zinc-500">
               {work.title}
             </figcaption>
           </figure>
@@ -66,7 +66,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
 
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-6"
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/90 p-6"
           onClick={() => setSelected(null)}
         >
           {selected.category === "video" ? (
@@ -78,19 +78,21 @@ export default function WorksGallery({ works }: { works: Work[] }) {
               autoPlay
               playsInline
               onClick={(e) => e.stopPropagation()}
-              className="max-h-full max-w-full"
+              className="max-h-[calc(100%-2rem)] max-w-full"
             />
           ) : (
-            <div className="relative h-full w-full">
-              <Image
-                src={selected.src}
-                alt={selected.title}
-                fill
-                className="object-contain"
-                sizes="100vw"
-              />
-            </div>
+            <Image
+              src={selected.src}
+              alt={selected.title}
+              width={0}
+              height={0}
+              sizes="100vw"
+              className="h-auto max-h-[calc(100%-2rem)] w-auto max-w-full"
+            />
           )}
+          <p className="text-xs tracking-wide text-zinc-500">
+            {selected.title}
+          </p>
         </div>
       )}
     </>

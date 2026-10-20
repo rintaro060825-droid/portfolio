@@ -14,14 +14,14 @@ export default function Header() {
           WORKS
         </Link>
         <Link href="/contact" className="hover:opacity-70">
-          Contact
+          CONTACT
         </Link>
         <Link href="/about" className="hover:opacity-70">
-          About me
+          ABOUT ME
         </Link>
       </nav>
       {!isHome && (
-        <Link href="/" className="text-lg tracking-tight hover:opacity-70">
+        <Link href="/" className="mt-2 text-lg tracking-tight hover:opacity-70">
           Rintaro Toda
         </Link>
       )}
