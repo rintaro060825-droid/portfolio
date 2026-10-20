@@ -1,8 +1,9 @@
 export default function Contact() {
   return (
-    <div className="flex flex-1 flex-col items-center justify-center px-6 text-center">
+    // Centred on the whole screen rather than the space under the header
+    <div className="pointer-events-none fixed inset-0 flex flex-col items-center justify-center px-6 text-center">
       <h1 className="text-4xl font-semibold tracking-tight">Contact</h1>
-      <div className="mt-6 flex flex-col gap-4 text-lg text-white/75">
+      <div className="pointer-events-auto mt-6 flex flex-col items-center gap-4 text-lg text-white/75">
         <a
           href="https://instagram.com/med_dropsss"
           target="_blank"
