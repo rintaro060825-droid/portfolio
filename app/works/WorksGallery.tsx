@@ -36,7 +36,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
             <button
               type="button"
               onClick={() => setSelected(work)}
-              className={`group relative aspect-square overflow-hidden bg-zinc-900 shadow-lg ${
+              className={`group relative aspect-square overflow-hidden bg-zinc-800 shadow-lg ${
                 squares[work.src] ? "p-[4%]" : ""
               }`}
             >
