@@ -8,7 +8,7 @@ export default function Header() {
   const isHome = pathname === "/";
 
   return (
-    <header className="flex flex-col items-start gap-2 px-6 py-6 text-sm font-medium">
+    <header className="flex flex-col items-start gap-2 px-6 py-6 text-base font-medium">
       <nav className="flex gap-6">
         <Link href="/works" className="hover:opacity-70">
           WORKS
@@ -21,7 +21,7 @@ export default function Header() {
         </Link>
       </nav>
       {!isHome && (
-        <Link href="/" className="mt-2 text-lg tracking-tight hover:opacity-70">
+        <Link href="/" className="mt-2 text-xl tracking-tight hover:opacity-70">
           Rintaro Toda
         </Link>
       )}
