@@ -13,8 +13,8 @@ export type Work = {
   poster?: string;
 };
 
-// A photo this close to 1:1 gets a thin white border; any other shape is
-// fitted whole, leaving white only above and below or at the sides.
+// A photo this close to 1:1 gets a thin black border; any other shape is
+// fitted whole, leaving black only above and below or at the sides.
 const SQUARE_TOLERANCE = 0.02;
 
 export default function WorksGallery({ works }: { works: Work[] }) {
@@ -36,7 +36,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
             <button
               type="button"
               onClick={() => setSelected(work)}
-              className={`group relative aspect-square overflow-hidden bg-white shadow-lg ${
+              className={`group relative aspect-square overflow-hidden bg-black shadow-lg ${
                 squares[work.src] ? "p-[4%]" : ""
               }`}
             >
