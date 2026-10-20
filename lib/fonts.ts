@@ -4,7 +4,7 @@
 // 3. Paste the font's CSS name exactly as Adobe shows it, e.g. "futura-pt"
 // Leave either empty to keep Times New Roman.
 
-export const ADOBE_KIT_ID = "";
-export const ADOBE_FONT_FAMILY = "";
+export const ADOBE_KIT_ID = "xmc0gzu";
+export const ADOBE_FONT_FAMILY = "bd-terminal-vf";
 
 export const adobeFontEnabled = ADOBE_KIT_ID !== "" && ADOBE_FONT_FAMILY !== "";
