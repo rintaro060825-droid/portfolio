@@ -24,38 +24,42 @@ export default function WorksGallery({ works }: { works: Work[] }) {
             <button
               type="button"
               onClick={() => setSelected(work)}
-              className="group relative aspect-square overflow-hidden rounded-lg bg-white"
+              className="group relative aspect-square overflow-hidden bg-white p-[8%] shadow-lg"
             >
-              {work.category === "video" ? (
-                <>
-                  <video
+              <div className="relative h-full w-full">
+                {work.category === "video" ? (
+                  <>
+                    <video
+                      src={work.src}
+                      poster={work.poster}
+                      aria-label={work.title}
+                      muted
+                      loop
+                      playsInline
+                      preload="metadata"
+                      onMouseEnter={(e) =>
+                        e.currentTarget.play().catch(() => {})
+                      }
+                      onMouseLeave={(e) => e.currentTarget.pause()}
+                      className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    />
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute right-3 bottom-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-xs text-white"
+                    >
+                      ▶
+                    </span>
+                  </>
+                ) : (
+                  <Image
                     src={work.src}
-                    poster={work.poster}
-                    aria-label={work.title}
-                    muted
-                    loop
-                    playsInline
-                    preload="metadata"
-                    onMouseEnter={(e) => e.currentTarget.play().catch(() => {})}
-                    onMouseLeave={(e) => e.currentTarget.pause()}
-                    className="absolute inset-0 h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                    alt={work.title}
+                    fill
+                    className="object-contain transition-transform duration-300 group-hover:scale-105"
+                    sizes="(min-width: 1024px) 33vw, 50vw"
                   />
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute right-3 bottom-3 flex h-8 w-8 items-center justify-center rounded-full bg-black/60 text-xs text-white"
-                  >
-                    ▶
-                  </span>
-                </>
-              ) : (
-                <Image
-                  src={work.src}
-                  alt={work.title}
-                  fill
-                  className="object-contain transition-transform duration-300 group-hover:scale-105"
-                  sizes="(min-width: 1024px) 33vw, 50vw"
-                />
-              )}
+                )}
+              </div>
             </button>
             <figcaption className="text-xs tracking-wide text-zinc-500">
               {work.title}
