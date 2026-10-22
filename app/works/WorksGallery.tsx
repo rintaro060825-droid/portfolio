@@ -89,7 +89,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
                 )}
               </div>
             </button>
-            <figcaption className="text-xs tracking-wide text-white/70">
+            <figcaption className="text-sm tracking-wide text-white/70">
               {work.title}
             </figcaption>
           </figure>
