@@ -13,8 +13,8 @@ export type Work = {
   poster?: string;
 };
 
-// A photo this close to 1:1 gets a thin pale-blue border; any other shape is
-// fitted whole, leaving pale blue only above and below or at the sides.
+// A photo this close to 1:1 gets a thin dark grey border; any other shape is
+// fitted whole, leaving dark grey only above and below or at the sides.
 const SQUARE_TOLERANCE = 0.02;
 
 export default function WorksGallery({ works }: { works: Work[] }) {
@@ -36,7 +36,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
             <button
               type="button"
               onClick={() => setSelected(work)}
-              className={`group relative aspect-square overflow-hidden bg-[#dc9aa8] shadow-lg ${
+              className={`group relative aspect-square overflow-hidden bg-zinc-800 shadow-lg ${
                 squares[work.src] ? "p-[4%]" : ""
               }`}
             >
