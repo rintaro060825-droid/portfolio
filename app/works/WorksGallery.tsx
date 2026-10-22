@@ -147,6 +147,17 @@ export default function WorksGallery({ works }: { works: Work[] }) {
             step(dx < 0 ? 1 : -1);
           }}
         >
+          <button
+            type="button"
+            aria-label="Close"
+            onClick={(e) => {
+              e.stopPropagation();
+              close();
+            }}
+            className="absolute top-4 right-4 flex h-10 w-10 items-center justify-center rounded-full bg-white/10 text-lg text-white transition-colors hover:bg-white/20"
+          >
+            ✕
+          </button>
           {selected.category === "video" ? (
             <video
               key={selected.src}
