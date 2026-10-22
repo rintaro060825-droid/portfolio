@@ -14,7 +14,7 @@ export default function Header() {
   const isHome = pathname === "/";
 
   return (
-    <header className="flex flex-col items-start gap-2 px-6 py-6 text-xl font-medium">
+    <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-2 px-6 py-6 text-xl font-medium">
       <nav className="flex gap-6">
         {NAV.map(({ href, label }) => {
           const active = pathname === href || pathname.startsWith(`${href}/`);
@@ -31,7 +31,7 @@ export default function Header() {
         })}
       </nav>
       {!isHome && (
-        <Link href="/" className="mt-2 text-xl tracking-tight hover:opacity-70">
+        <Link href="/" className="ml-auto text-xl tracking-tight hover:opacity-70">
           Rintaro Toda
         </Link>
       )}
