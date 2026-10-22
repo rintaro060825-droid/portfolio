@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 
 type Category = "video" | "retouch" | "logo";
@@ -13,6 +13,9 @@ export type Work = {
   poster?: string;
 };
 
+// Minimum horizontal travel, in px, for a touch to count as a swipe
+const SWIPE_THRESHOLD = 50;
+
 // A photo this close to 1:1 gets a thin dark grey border; any other shape is
 // fitted whole, leaving dark grey only above and below or at the sides.
 const SQUARE_TOLERANCE = 0.02;
@@ -21,6 +24,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const selected = selectedIndex === null ? null : works[selectedIndex];
   const isOpen = selectedIndex !== null;
+  const touchStart = useRef<{ x: number; y: number } | null>(null);
   const [squares, setSquares] = useState<Record<string, boolean>>({});
 
   const measure = (src: string, width: number, height: number) => {
@@ -122,6 +126,26 @@ export default function WorksGallery({ works }: { works: Work[] }) {
         <div
           className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/90 p-6"
           onClick={close}
+          onTouchStart={(e) => {
+            // Leave touches on a video alone so its scrubber still works
+            const onVideo = e.target instanceof HTMLVideoElement;
+            const touch = e.touches[0];
+            touchStart.current = onVideo
+              ? null
+              : { x: touch.clientX, y: touch.clientY };
+          }}
+          onTouchEnd={(e) => {
+            const start = touchStart.current;
+            touchStart.current = null;
+            if (!start) return;
+            const touch = e.changedTouches[0];
+            const dx = touch.clientX - start.x;
+            const dy = touch.clientY - start.y;
+            if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy))
+              return;
+            // Swipe left for the next work, right for the previous one
+            step(dx < 0 ? 1 : -1);
+          }}
         >
           {selected.category === "video" ? (
             <video
