@@ -149,30 +149,17 @@ export default function WorksGallery({ works }: { works: Work[] }) {
             {selected.title}
           </p>
           {works.length > 1 && (
-            <>
-              <button
-                type="button"
-                aria-label="Previous"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  step(-1);
-                }}
-                className="absolute top-1/2 left-2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-2xl text-white/80 transition hover:bg-black/80 hover:text-white sm:left-4"
-              >
-                ‹
-              </button>
-              <button
-                type="button"
-                aria-label="Next"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  step(1);
-                }}
-                className="absolute top-1/2 right-2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-2xl text-white/80 transition hover:bg-black/80 hover:text-white sm:right-4"
-              >
-                ›
-              </button>
-            </>
+            <button
+              type="button"
+              aria-label="Previous"
+              onClick={(e) => {
+                e.stopPropagation();
+                step(-1);
+              }}
+              className="absolute top-1/2 left-2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-2xl text-white/80 transition hover:bg-black/80 hover:text-white sm:left-4"
+            >
+              ‹
+            </button>
           )}
         </div>
       )}
