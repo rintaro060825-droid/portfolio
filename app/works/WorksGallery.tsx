@@ -30,7 +30,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
 
   return (
     <>
-      <div className="mt-10 grid grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
+      <div className="mt-10 grid w-[85%] grid-cols-2 gap-3 sm:gap-6 lg:grid-cols-3">
         {works.map((work) => (
           <figure key={work.src} className="flex flex-col gap-2">
             <button
