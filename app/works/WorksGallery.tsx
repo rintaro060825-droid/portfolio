@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 
 type Category = "video" | "retouch" | "logo";
@@ -18,7 +18,9 @@ export type Work = {
 const SQUARE_TOLERANCE = 0.02;
 
 export default function WorksGallery({ works }: { works: Work[] }) {
-  const [selected, setSelected] = useState<Work | null>(null);
+  const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
+  const selected = selectedIndex === null ? null : works[selectedIndex];
+  const isOpen = selectedIndex !== null;
   const [squares, setSquares] = useState<Record<string, boolean>>({});
 
   const measure = (src: string, width: number, height: number) => {
@@ -28,14 +30,34 @@ export default function WorksGallery({ works }: { works: Work[] }) {
     }
   };
 
+  const close = () => setSelectedIndex(null);
+  // Wraps around at either end
+  const step = (delta: number) =>
+    setSelectedIndex((i) =>
+      i === null ? i : (i + delta + works.length) % works.length,
+    );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") step(-1);
+      else if (e.key === "ArrowRight") step(1);
+      else if (e.key === "Escape") close();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+    // step and close only call setSelectedIndex, so they never go stale
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen]);
+
   return (
     <>
       <div className="mt-10 grid grid-cols-2 gap-4 sm:gap-8 lg:grid-cols-3">
-        {works.map((work) => (
+        {works.map((work, index) => (
           <figure key={work.src} className="flex flex-col gap-2">
             <button
               type="button"
-              onClick={() => setSelected(work)}
+              onClick={() => setSelectedIndex(index)}
               className={`group relative aspect-square overflow-hidden bg-[#333338] shadow-lg ${
                 squares[work.src] ? "p-[4%]" : ""
               }`}
@@ -99,10 +121,11 @@ export default function WorksGallery({ works }: { works: Work[] }) {
       {selected && (
         <div
           className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/90 p-6"
-          onClick={() => setSelected(null)}
+          onClick={close}
         >
           {selected.category === "video" ? (
             <video
+              key={selected.src}
               src={selected.src}
               poster={selected.poster}
               aria-label={selected.title}
@@ -125,6 +148,32 @@ export default function WorksGallery({ works }: { works: Work[] }) {
           <p className="text-xs tracking-wide text-white/70">
             {selected.title}
           </p>
+          {works.length > 1 && (
+            <>
+              <button
+                type="button"
+                aria-label="Previous"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  step(-1);
+                }}
+                className="absolute top-1/2 left-2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-2xl text-white/80 transition hover:bg-black/80 hover:text-white sm:left-4"
+              >
+                ‹
+              </button>
+              <button
+                type="button"
+                aria-label="Next"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  step(1);
+                }}
+                className="absolute top-1/2 right-2 flex h-12 w-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/50 text-2xl text-white/80 transition hover:bg-black/80 hover:text-white sm:right-4"
+              >
+                ›
+              </button>
+            </>
+          )}
         </div>
       )}
     </>
