@@ -5,10 +5,10 @@ import type { Work } from "./WorksGallery";
 export const works: Work[] = [
   { title: "Retouch x00001", category: "retouch", src: "/works/photos/20260803-20260803-IMG_0245.jpg" },
   { title: "Retouch x00002", category: "retouch", src: "/works/photos/20260803-IMG_1215.jpg" },
-  { title: "Retouch x00003", category: "retouch", src: "/works/photos/20260803-IMG_1337.jpg" },
+  { title: "Retouch x00003", category: "retouch", src: "/works/photos/20260804-IMG_1487.jpg" },
   { title: "Retouch x00004", category: "retouch", src: "/works/photos/20260803-IMG_1363.jpg" },
   { title: "Retouch x00005", category: "retouch", src: "/works/photos/20260803-IMG_1377.jpg" },
-  { title: "Retouch x00006", category: "retouch", src: "/works/photos/20260804-IMG_1487.jpg" },
+  { title: "Retouch x00006", category: "retouch", src: "/works/photos/20260803-IMG_1337.jpg" },
   { title: "Retouch x00007", category: "retouch", src: "/works/photos/20260310-IMG_0338-2.jpg" },
   { title: "Retouch x00008", category: "retouch", src: "/works/photos/20260803-IMG_0233.jpg" },
   { title: "Retouch x00009", category: "retouch", src: "/works/photos/20260803-IMG_0247.jpg" },
