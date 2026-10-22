@@ -13,7 +13,7 @@ export default function WorksNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="mt-6 flex gap-6 text-xl">
+    <nav className="flex gap-6 text-xl">
       {BRANCHES.map(({ href, label }) => {
         const active = pathname === href;
         return (
