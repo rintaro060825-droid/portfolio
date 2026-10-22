@@ -9,6 +9,13 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-adobe, "Times New Roman"), "Times New Roman", Times, Georgia, serif;
+  --animate-blink: blink 1s step-end infinite;
+
+  @keyframes blink {
+    50% {
+      opacity: 0;
+    }
+  }
 }
 
 body {

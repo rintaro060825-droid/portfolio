@@ -11,9 +11,41 @@ const BOTTOM_THRESHOLD = 32;
 // Lower = smoother and more lag behind the scroll position.
 const SMOOTHING = 0.12;
 
+// Typing intro: delay before the first letter, then time between letters.
+// The cursor keeps blinking for CURSOR_LINGER after the last letter.
+const TYPE_DELAY = 400;
+const TYPE_INTERVAL = 110;
+const CURSOR_LINGER = 1600;
+
 export default function Hero() {
   const [revealed, setRevealed] = useState(false);
+  const [typed, setTyped] = useState(0);
+  const [cursorVisible, setCursorVisible] = useState(true);
   const letterRefs = useRef<(HTMLSpanElement | null)[]>([]);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const timer = window.setTimeout(() => {
+        setTyped(NAME.length);
+        setCursorVisible(false);
+      });
+      return () => clearTimeout(timer);
+    }
+
+    const timers: number[] = [];
+    for (let i = 1; i <= NAME.length; i++) {
+      timers.push(
+        window.setTimeout(() => setTyped(i), TYPE_DELAY + i * TYPE_INTERVAL),
+      );
+    }
+    timers.push(
+      window.setTimeout(
+        () => setCursorVisible(false),
+        TYPE_DELAY + NAME.length * TYPE_INTERVAL + CURSOR_LINGER,
+      ),
+    );
+    return () => timers.forEach(clearTimeout);
+  }, []);
 
   useEffect(() => {
     let target = 0;
@@ -77,16 +109,21 @@ export default function Hero() {
       <div className="sticky top-0 flex h-screen flex-col items-center justify-center overflow-hidden px-6 text-center">
         <h1 className="flex flex-wrap justify-center text-4xl font-semibold tracking-tight sm:text-5xl">
           {NAME.split("").map((char, i) => (
-            <span
-              key={i}
-              ref={(el) => {
-                letterRefs.current[i] = el;
-              }}
-              className="inline-block will-change-transform"
-            >
-              {char === " " ? " " : char}
+            <span key={i} className="contents">
+              {cursorVisible && typed === i && <Cursor />}
+              <span
+                ref={(el) => {
+                  letterRefs.current[i] = el;
+                }}
+                className={`inline-block will-change-transform ${
+                  i < typed ? "" : "invisible"
+                }`}
+              >
+                {char === " " ? " " : char}
+              </span>
             </span>
           ))}
+          {cursorVisible && typed === NAME.length && <Cursor />}
         </h1>
         <div
           className={`flex flex-col items-center transition-opacity duration-700 ${
@@ -102,5 +139,14 @@ export default function Hero() {
         </div>
       </div>
     </div>
+  );
+}
+
+// Zero-width so the name's centered layout doesn't shift while typing.
+function Cursor() {
+  return (
+    <span aria-hidden className="relative inline-block w-0 self-stretch">
+      <span className="absolute top-[0.1em] bottom-[0.1em] left-[0.05em] w-[0.08em] animate-blink bg-current" />
+    </span>
   );
 }
