@@ -16,3 +16,11 @@ body {
   color: var(--foreground);
   font-family: var(--font-adobe, "Times New Roman"), "Times New Roman", Times, Georgia, serif;
 }
+
+/* Photo viewer: each strip slides back into place from its own offset */
+@keyframes strip-in {
+  from {
+    transform: translateY(var(--strip-offset));
+    opacity: 0;
+  }
+}

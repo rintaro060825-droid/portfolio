@@ -20,6 +20,86 @@ const SWIPE_THRESHOLD = 50;
 // fitted whole, leaving dark grey only above and below or at the sides.
 const SQUARE_TOLERANCE = 0.02;
 
+// Full-size photo intro: the photo is cut into vertical strips that each start
+// shifted up or down by a random amount, then slide back into place.
+const STRIP_COUNT = 24;
+const STRIP_MAX_OFFSET = 40; // % of the photo's height
+const STRIP_MIN_OFFSET = 10;
+const STRIP_DURATION = 700; // ms
+const STRIP_MAX_DELAY = 200; // ms
+
+const photoClass =
+  "h-auto max-h-[calc(100dvh-5rem)] w-auto max-w-[calc(100vw-3rem)]";
+
+function StripReveal({ work }: { work: Work }) {
+  const [loaded, setLoaded] = useState(false);
+  const [done, setDone] = useState(false);
+  const [strips] = useState(() =>
+    Array.from({ length: STRIP_COUNT }, () => {
+      const size =
+        STRIP_MIN_OFFSET +
+        Math.random() * (STRIP_MAX_OFFSET - STRIP_MIN_OFFSET);
+      return {
+        offset: Math.random() < 0.5 ? -size : size,
+        delay: Math.random() * STRIP_MAX_DELAY,
+      };
+    }),
+  );
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      const timer = window.setTimeout(() => setDone(true));
+      return () => clearTimeout(timer);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!loaded || done) return;
+    const timer = window.setTimeout(
+      () => setDone(true),
+      STRIP_DURATION + STRIP_MAX_DELAY,
+    );
+    return () => clearTimeout(timer);
+  }, [loaded, done]);
+
+  return (
+    <div className="relative">
+      {/* The whole photo sets the size and takes over once the strips land */}
+      <Image
+        src={work.src}
+        alt={work.title}
+        width={0}
+        height={0}
+        sizes="100vw"
+        onLoad={() => setLoaded(true)}
+        className={`${photoClass} ${done ? "" : "invisible"}`}
+      />
+      {loaded &&
+        !done &&
+        strips.map((strip, i) => (
+          <Image
+            key={i}
+            src={work.src}
+            alt=""
+            aria-hidden
+            fill
+            sizes="100vw"
+            className="object-fill"
+            style={
+              {
+                clipPath: `inset(0 ${100 - ((i + 1) / STRIP_COUNT) * 100}% 0 ${
+                  (i / STRIP_COUNT) * 100
+                }%)`,
+                "--strip-offset": `${strip.offset}%`,
+                animation: `strip-in ${STRIP_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1) ${strip.delay}ms both`,
+              } as React.CSSProperties
+            }
+          />
+        ))}
+    </div>
+  );
+}
+
 export default function WorksGallery({ works }: { works: Work[] }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const selected = selectedIndex === null ? null : works[selectedIndex];
@@ -171,14 +251,7 @@ export default function WorksGallery({ works }: { works: Work[] }) {
               className="max-h-[calc(100%-2rem)] max-w-full"
             />
           ) : (
-            <Image
-              src={selected.src}
-              alt={selected.title}
-              width={0}
-              height={0}
-              sizes="100vw"
-              className="h-auto max-h-[calc(100%-2rem)] w-auto max-w-full"
-            />
+            <StripReveal key={selected.src} work={selected} />
           )}
           <p className="text-xs tracking-wide text-white/70">
             {selected.title}
