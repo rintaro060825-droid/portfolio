@@ -20,62 +20,52 @@ const SWIPE_THRESHOLD = 50;
 // fitted whole, leaving dark grey only above and below or at the sides.
 const SQUARE_TOLERANCE = 0.02;
 
-// Full-size photo intro: the photo is cut into vertical strips that each start
-// shifted up or down by a random amount, then slide back into place.
+// Dragging a full-size photo cuts it into vertical strips that each bob up and
+// down on their own random wave as the drag moves, then snap back on release.
 const STRIP_COUNT = 24;
-const STRIP_MAX_OFFSET = 40; // % of the photo's height
-const STRIP_MIN_OFFSET = 10;
-const STRIP_DURATION = 700; // ms
-const STRIP_MAX_DELAY = 200; // ms
+const STRIP_MAX_OFFSET = 30; // % of the photo's height
+// Drag distance, in px, over which the strips grow to their full movement
+const STRIP_RAMP = 120;
+// How fast each strip's wave turns as the drag moves, in radians per px
+const STRIP_MIN_SPEED = 0.01;
+const STRIP_MAX_SPEED = 0.04;
+const STRIP_SETTLE = 450; // ms
 
 const photoClass =
   "h-auto max-h-[calc(100dvh-5rem)] w-auto max-w-[calc(100vw-3rem)]";
 
-function StripReveal({ work }: { work: Work }) {
-  const [loaded, setLoaded] = useState(false);
-  const [done, setDone] = useState(false);
+function StripPhoto({
+  work,
+  dragX,
+  settling,
+}: {
+  work: Work;
+  dragX: number;
+  settling: boolean;
+}) {
   const [strips] = useState(() =>
-    Array.from({ length: STRIP_COUNT }, () => {
-      const size =
-        STRIP_MIN_OFFSET +
-        Math.random() * (STRIP_MAX_OFFSET - STRIP_MIN_OFFSET);
-      return {
-        offset: Math.random() < 0.5 ? -size : size,
-        delay: Math.random() * STRIP_MAX_DELAY,
-      };
-    }),
+    Array.from({ length: STRIP_COUNT }, () => ({
+      phase: Math.random() * Math.PI * 2,
+      speed:
+        STRIP_MIN_SPEED + Math.random() * (STRIP_MAX_SPEED - STRIP_MIN_SPEED),
+    })),
   );
-
-  useEffect(() => {
-    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      const timer = window.setTimeout(() => setDone(true));
-      return () => clearTimeout(timer);
-    }
-  }, []);
-
-  useEffect(() => {
-    if (!loaded || done) return;
-    const timer = window.setTimeout(
-      () => setDone(true),
-      STRIP_DURATION + STRIP_MAX_DELAY,
-    );
-    return () => clearTimeout(timer);
-  }, [loaded, done]);
+  const active = dragX !== 0 || settling;
+  const ramp = Math.min(Math.abs(dragX) / STRIP_RAMP, 1);
 
   return (
     <div className="relative">
-      {/* The whole photo sets the size and takes over once the strips land */}
+      {/* The whole photo sets the size and shows whenever the strips rest */}
       <Image
         src={work.src}
         alt={work.title}
         width={0}
         height={0}
         sizes="100vw"
-        onLoad={() => setLoaded(true)}
-        className={`${photoClass} ${done ? "" : "invisible"}`}
+        draggable={false}
+        className={`${photoClass} ${active ? "invisible" : ""}`}
       />
-      {loaded &&
-        !done &&
+      {active &&
         strips.map((strip, i) => (
           <Image
             key={i}
@@ -84,16 +74,19 @@ function StripReveal({ work }: { work: Work }) {
             aria-hidden
             fill
             sizes="100vw"
+            draggable={false}
             className="object-fill"
-            style={
-              {
-                clipPath: `inset(0 ${100 - ((i + 1) / STRIP_COUNT) * 100}% 0 ${
-                  (i / STRIP_COUNT) * 100
-                }%)`,
-                "--strip-offset": `${strip.offset}%`,
-                animation: `strip-in ${STRIP_DURATION}ms cubic-bezier(0.22, 1, 0.36, 1) ${strip.delay}ms both`,
-              } as React.CSSProperties
-            }
+            style={{
+              clipPath: `inset(0 ${100 - ((i + 1) / STRIP_COUNT) * 100}% 0 ${
+                (i / STRIP_COUNT) * 100
+              }%)`,
+              transform: `translateY(${
+                STRIP_MAX_OFFSET * ramp * Math.sin(dragX * strip.speed + strip.phase)
+              }%)`,
+              transition: settling
+                ? `transform ${STRIP_SETTLE}ms cubic-bezier(0.22, 1, 0.36, 1)`
+                : undefined,
+            }}
           />
         ))}
     </div>
@@ -104,8 +97,18 @@ export default function WorksGallery({ works }: { works: Work[] }) {
   const [selectedIndex, setSelectedIndex] = useState<number | null>(null);
   const selected = selectedIndex === null ? null : works[selectedIndex];
   const isOpen = selectedIndex !== null;
-  const touchStart = useRef<{ x: number; y: number } | null>(null);
+  const dragStart = useRef<{ x: number; y: number } | null>(null);
+  // Set once a press moves far enough to be a drag, so letting go won't close
+  const dragged = useRef(false);
+  const [dragX, setDragX] = useState(0);
+  const [settling, setSettling] = useState(false);
   const [squares, setSquares] = useState<Record<string, boolean>>({});
+
+  useEffect(() => {
+    if (!settling) return;
+    const timer = window.setTimeout(() => setSettling(false), STRIP_SETTLE);
+    return () => clearTimeout(timer);
+  }, [settling]);
 
   const measure = (src: string, width: number, height: number) => {
     if (!width || !height) return;
@@ -204,27 +207,47 @@ export default function WorksGallery({ works }: { works: Work[] }) {
 
       {selected && (
         <div
-          className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-3 bg-black/90 p-6"
-          onClick={close}
-          onTouchStart={(e) => {
-            // Leave touches on a video alone so its scrubber still works
-            const onVideo = e.target instanceof HTMLVideoElement;
-            const touch = e.touches[0];
-            touchStart.current = onVideo
-              ? null
-              : { x: touch.clientX, y: touch.clientY };
+          className="fixed inset-0 z-50 flex touch-none flex-col items-center justify-center gap-3 bg-black/90 p-6 select-none"
+          onClick={() => {
+            if (dragged.current) dragged.current = false;
+            else close();
           }}
-          onTouchEnd={(e) => {
-            const start = touchStart.current;
-            touchStart.current = null;
-            if (!start) return;
-            const touch = e.changedTouches[0];
-            const dx = touch.clientX - start.x;
-            const dy = touch.clientY - start.y;
-            if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy))
+          onPointerDown={(e) => {
+            // Leave presses on a video or the close button alone, so the
+            // video's scrubber and the button still work
+            const target = e.target as Element;
+            if (target instanceof HTMLVideoElement || target.closest("button"))
               return;
+            dragStart.current = { x: e.clientX, y: e.clientY };
+            dragged.current = false;
+            e.currentTarget.setPointerCapture(e.pointerId);
+          }}
+          onPointerMove={(e) => {
+            const start = dragStart.current;
+            if (!start) return;
+            const dx = e.clientX - start.x;
+            if (Math.abs(dx) > 5) dragged.current = true;
+            if (!window.matchMedia("(prefers-reduced-motion: reduce)").matches)
+              setDragX(dx);
+          }}
+          onPointerUp={(e) => {
+            const start = dragStart.current;
+            dragStart.current = null;
+            if (!start) return;
+            const dx = e.clientX - start.x;
+            const dy = e.clientY - start.y;
+            setDragX(0);
+            if (Math.abs(dx) < SWIPE_THRESHOLD || Math.abs(dx) < Math.abs(dy)) {
+              setSettling(dx !== 0);
+              return;
+            }
             // Swipe left for the next work, right for the previous one
             step(dx < 0 ? 1 : -1);
+          }}
+          onPointerCancel={() => {
+            dragStart.current = null;
+            setDragX(0);
+            setSettling(true);
           }}
         >
           <button
@@ -251,7 +274,12 @@ export default function WorksGallery({ works }: { works: Work[] }) {
               className="max-h-[calc(100%-2rem)] max-w-full"
             />
           ) : (
-            <StripReveal key={selected.src} work={selected} />
+            <StripPhoto
+              key={selected.src}
+              work={selected}
+              dragX={dragX}
+              settling={settling}
+            />
           )}
           <p className="text-xs tracking-wide text-white/70">
             {selected.title}
